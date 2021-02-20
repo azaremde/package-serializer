@@ -6,14 +6,22 @@
 
 class Serializable
 {
+protected:
+    unsigned int size /* in bytes */ { 0 };
+
 private:
     template <typename T>
-    inline static void write_vector(std::ofstream &ofs, std::vector<T> vec)
+    inline static unsigned int write_vector(std::ofstream &ofs, std::vector<T> vec)
     {
+        unsigned int memory = 0;
+        
         for (int i = 0; i < vec.size(); i++)
         {
             ofs.write((char *)&vec[i], sizeof(T));
+            memory += sizeof(T);
         }
+
+        return memory;
     }
 
     template <typename T>
@@ -26,72 +34,107 @@ private:
         }
     }
 
-    void save_sizes_of_float_vectors(std::ofstream& ofs)
+    unsigned int save_sizes_of_float_vectors(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_float_vectors().size(); i++)
         {
             std::vector<float> &vector = *get_float_vectors()[i];
             int size = vector.size();
             ofs.write((char *)&size, sizeof(int));
+            memory += sizeof(int);
         }
+
+        return memory;
     }
 
-    void save_sizes_of_int_vectors(std::ofstream& ofs)
+    unsigned int save_sizes_of_int_vectors(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_int_vectors().size(); i++)
         {
             std::vector<int> &vector = *get_int_vectors()[i];
             int size = vector.size();
             ofs.write((char *)&size, sizeof(int));
+            memory += sizeof(int);
         }
+
+        return memory;
     }
 
-    void save_float_vectors(std::ofstream& ofs)
+    unsigned int save_float_vectors(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_float_vectors().size(); i++)
         {
             std::vector<float> &vector = *get_float_vectors()[i];
-            write_vector(ofs, vector);
+            memory += write_vector(ofs, vector);
         }
+
+        return memory;
     }
 
-    void save_int_vectors(std::ofstream& ofs)
+    unsigned int save_int_vectors(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_int_vectors().size(); i++)
         {
             std::vector<int> &vector = *get_int_vectors()[i];
-            write_vector(ofs, vector);
+            memory += write_vector(ofs, vector);
         }
+
+        return memory;
     }
 
-    void save_floats(std::ofstream& ofs)
+    unsigned int save_floats(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_floats().size(); i++)
         {
             ofs.write((char *)get_floats()[i], sizeof(float));
+            memory += sizeof(float);
         }
+
+        return memory;
     }
 
-    void save_ints(std::ofstream& ofs)
+    unsigned int save_ints(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_ints().size(); i++)
         {
             ofs.write((char *)get_ints()[i], sizeof(int));
-        }        
+            memory += sizeof(int);
+        }       
+
+        return memory; 
     }
 
-    void save_sizes_of_strings(std::ofstream& ofs)
+    unsigned int save_sizes_of_strings(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         p_strings &strings = get_strings();
         for (int i = 0; i < strings.size(); i++)
         {
             int size = strings[i]->size();
             ofs.write((char *)&size, sizeof(int));
+            memory += sizeof(int);
         }
+
+        return memory;
     }
 
-    void save_strings(std::ofstream& ofs)
+    unsigned int save_strings(std::ofstream& ofs)
     {
+        unsigned int memory = 0;
+
         p_strings &strings = get_strings();
         for (int i = 0; i < strings.size(); i++)
         {
@@ -99,28 +142,34 @@ private:
             for (int j = 0; j < str.size(); j++)
             {
                 ofs.write((char *)&str[j], sizeof(char));
+                memory += sizeof(char);
             }
         }
+
+        return memory;
     }
 
-    std::vector<int>* load_sizes_of_float_vectors(std::ifstream& ifs)
+    unsigned int load_sizes_of_float_vectors(std::ifstream& ifs, std::vector<int>* float_vectors_sizes)
     {
+        unsigned int memory = 0;
+
         v_vp_float &float_vectors = get_float_vectors();
-        std::vector<int>* float_vectors_sizes = new std::vector<int>();
         float_vectors_sizes->resize(float_vectors.size());
 
         for (int i = 0; i < float_vectors.size(); i++)
         {
             ifs.read((char *)&(*float_vectors_sizes)[i], sizeof(int));
+            memory += sizeof(int);
         }
 
-        return float_vectors_sizes;
+        return memory;
     }
 
-    std::vector<int>* load_sizes_of_int_vectors(std::ifstream& ifs)
-    {        
+    unsigned int load_sizes_of_int_vectors(std::ifstream& ifs, std::vector<int>* int_vectors_sizes)
+    {   
+        unsigned int memory = 0;     
+
         v_vp_int &int_vectors = get_int_vectors();
-        std::vector<int>* int_vectors_sizes = new std::vector<int>();
         int_vectors_sizes->resize(int_vectors.size());
 
         for (int i = 0; i < int_vectors.size(); i++)
@@ -128,11 +177,13 @@ private:
             ifs.read((char *)&(*int_vectors_sizes)[i], sizeof(int));
         }
 
-        return int_vectors_sizes;
+        return memory;
     }
 
-    void load_float_vectors(std::ifstream& ifs, std::vector<int>* float_vectors_sizes)
+    unsigned int load_float_vectors(std::ifstream& ifs, std::vector<int>* float_vectors_sizes)
     {
+        unsigned int memory = 0;
+        
         for (int i = 0; i < float_vectors_sizes->size(); i++)
         {
             int size = (*float_vectors_sizes)[i];
@@ -140,13 +191,18 @@ private:
             for (int i = 0; i < size; i++)
             {
                 ifs.read((char *)&Serializable::f_buffer[i], sizeof(float));
+                memory += sizeof(float);
             }
             populate_vector(*get_float_vectors()[i], Serializable::f_buffer, size);
         }
+
+        return memory;
     }
 
-    void load_int_vectors(std::ifstream& ifs, std::vector<int>* int_vectors_sizes)
+    unsigned int load_int_vectors(std::ifstream& ifs, std::vector<int>* int_vectors_sizes)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < int_vectors_sizes->size(); i++)
         {
             int size = (*int_vectors_sizes)[i];
@@ -154,31 +210,45 @@ private:
             for (int i = 0; i < size; i++)
             {
                 ifs.read((char *)&Serializable::i_buffer[i], sizeof(float));
+                memory += sizeof(float);
             }
             populate_vector(*get_int_vectors()[i], Serializable::i_buffer, size);
         }
+
+        return memory;
     }
 
-    void load_floats(std::ifstream& ifs)
+    unsigned int load_floats(std::ifstream& ifs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_floats().size(); i++)
         {
             ifs.read((char *)get_floats()[i], sizeof(float));
+            memory += sizeof(float);
         }
+
+        return memory;
     }
 
-    void load_ints(std::ifstream& ifs)
+    unsigned int load_ints(std::ifstream& ifs)
     {
+        unsigned int memory = 0;
+
         for (int i = 0; i < get_ints().size(); i++)
         {
             ifs.read((char *)get_ints()[i], sizeof(int));
+            memory += sizeof(int);
         }
+
+        return memory;
     }
 
-    std::vector<int>* load_sizes_of_strings(std::ifstream& ifs)
+    unsigned int load_sizes_of_strings(std::ifstream& ifs, std::vector<int>* string_sizes)
     {
+        unsigned int memory = 0;
+
         p_strings strings = get_strings();
-        std::vector<int>* string_sizes = new std::vector<int>();
         string_sizes->resize(strings.size());
         for (int i = 0; i < strings.size(); i++)
         {
@@ -190,11 +260,13 @@ private:
             strings[i]->resize((*string_sizes)[i]);
         }
 
-        return string_sizes;
+        return memory;
     }
 
-    void load_strings(std::ifstream& ifs, std::vector<int>* string_sizes)
+    unsigned int load_strings(std::ifstream& ifs, std::vector<int>* string_sizes)
     {
+        unsigned int memory = 0;
+
         p_strings strings = get_strings();
         for (int i = 0; i < string_sizes->size(); i++)
         {
@@ -202,8 +274,11 @@ private:
             for (int j = 0; j < strings[i]->size(); j++)
             {
                 ifs.read((char *)&str[j], sizeof(char));
+                memory += sizeof(char);
             }
         }
+
+        return memory;
     }
 
     inline static double *d_buffer { nullptr };
@@ -224,50 +299,67 @@ public:
     virtual p_floats get_floats() { return {}; };
     virtual p_strings get_strings() { return {}; };
 
-    void serialize(std::ofstream &ofs)
+    unsigned int serialize(std::ofstream &ofs)
     {
-        save_sizes_of_float_vectors(ofs);
-        save_sizes_of_int_vectors(ofs);
-        save_sizes_of_strings(ofs);
+        size = 0;
 
-        save_float_vectors(ofs);
-        save_int_vectors(ofs);
-        save_strings(ofs);
-        
-        save_floats(ofs);
-        save_ints(ofs);
+        size += save_sizes_of_float_vectors(ofs);
+        size += save_sizes_of_int_vectors(ofs);
+        size += save_sizes_of_strings(ofs);
+
+        size += save_float_vectors(ofs);
+        size += save_int_vectors(ofs);
+
+        size += save_strings(ofs);        
+        size += save_floats(ofs);
+        size += save_ints(ofs);
+
+        return size;
     }
 
-    void deserialize(std::ifstream &ifs)
+    unsigned int deserialize(std::ifstream &ifs)
     {
-        std::vector<int>* float_vectors_sizes = load_sizes_of_float_vectors(ifs);
-        std::vector<int>* int_vectors_sizes = load_sizes_of_int_vectors(ifs);
-        std::vector<int>* string_sizes = load_sizes_of_strings(ifs);
+        size = 0;
 
-        load_float_vectors(ifs, float_vectors_sizes);
-        load_int_vectors(ifs, int_vectors_sizes);
-        load_strings(ifs, string_sizes);
+        std::vector<int> float_vectors_sizes;
+        std::vector<int> int_vectors_sizes;
+        std::vector<int> string_sizes;
 
-        load_floats(ifs);
-        load_ints(ifs);
+        size += load_sizes_of_float_vectors(ifs, &float_vectors_sizes);
+        size += load_sizes_of_int_vectors(ifs, &int_vectors_sizes);
+        size += load_sizes_of_strings(ifs, &string_sizes);
 
-        delete float_vectors_sizes;
-        delete int_vectors_sizes;
-        delete string_sizes;
+        size += load_float_vectors(ifs, &float_vectors_sizes);
+        size += load_int_vectors(ifs, &int_vectors_sizes);
+
+        size += load_strings(ifs, &string_sizes);
+        size += load_floats(ifs);
+        size += load_ints(ifs);
+
+        return size;
     }
 
-    void save(const std::string& path)
+    unsigned int save(const std::string& path)
     {
         std::ofstream ofs(path);
         serialize(ofs);
         ofs.close();
+
+        return size;
     }
 
-    void load(const std::string& path)
+    unsigned int load(const std::string& path)
     {
         std::ifstream ifs(path);
         deserialize(ifs);
         ifs.close();
+
+        return size;
+    }
+
+    unsigned int get_size() const
+    {
+        return size;
     }
 };
 
@@ -285,25 +377,78 @@ public:
     }
 };
 
-// #define SAVE
-
 #define LOG(x) std::cout << x << '\n'
+
+struct Mesh : public Serializable
+{
+    std::vector<float> pos;
+    std::vector<int> ind;
+    std::vector<float> nor;
+    std::vector<float> uvs;
+
+    virtual v_vp_float get_float_vectors() override
+    {
+        return {
+            &pos,
+            &nor,
+            &uvs
+        };
+    }
+
+    virtual v_vp_int get_int_vectors() override
+    {
+        return {
+            &ind
+        };
+    }
+
+    void print()
+    {
+        LOG("pos");
+        for (float p : pos)
+            LOG(p);
+        LOG("ind");
+        for (int p : ind)
+            LOG(p);
+        LOG("nor");
+        for (float p : nor)
+            LOG(p);
+        LOG("uvs");
+        for (float p : uvs)
+            LOG(p);
+    }
+};
 
 int main()
 {
-#ifdef SAVE
+    // Mesh m1;
+    // m1.pos = { 1, 2, 3 };
+    // m1.ind = { 62, 27, 28, 92, 210 };
+    // m1.nor = { 10 };
+    // m1.uvs = { 2.1f, 2.2f, 10.1f };
 
-    MyClass m1;
-    m1.greetings = "Hello!";
-    m1.save("my-class");
+    // Mesh m2;
+    // m2.pos = { 113, 22, 53, 4, 6 };
+    // m2.ind = { 211 };
+    // m2.nor = { 123 };
+    // m2.uvs = { 15.1f };
+    
+    // std::ofstream ofs("meshes");
+    // int m1size = m1.serialize(ofs);
+    // int m2size = m2.serialize(ofs);
+    // ofs.close();
 
-#else
+    Mesh m3;
+    Mesh m4;
 
-    MyClass m2;
-    m2.load("my-class");
-    LOG(m2.greetings);
+    std::ifstream ifs("meshes");
+    ifs.seekg(64);
+    m3.deserialize(ifs);
+    ifs.seekg(64);
+    m4.deserialize(ifs);
 
-#endif
+    m3.print();
+    m4.print();
 
     return 0;
 }
