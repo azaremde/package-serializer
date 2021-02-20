@@ -4,10 +4,21 @@
 #include <iostream>
 #include <vector>
 
+#define LOG(x) std::cout << x << '\n'
+
 class Serializable
 {
 protected:
+    std::string name;
+
     unsigned int size /* in bytes */ { 0 };
+
+    Serializable(const std::string& name)
+    {
+        this->name = name;
+    }
+
+    Serializable() {}
 
 private:
     template <typename T>
@@ -303,6 +314,14 @@ public:
     {
         size = 0;
 
+        int name_size = name.size();
+        ofs.write((char*)&name_size, sizeof(int));
+
+        for (int i = 0; i < name.size(); i++)
+        {
+            ofs.write((char*) &name[i], sizeof(char));
+        }
+
         size += save_sizes_of_float_vectors(ofs);
         size += save_sizes_of_int_vectors(ofs);
         size += save_sizes_of_strings(ofs);
@@ -320,6 +339,17 @@ public:
     unsigned int deserialize(std::ifstream &ifs)
     {
         size = 0;
+
+        int name_size;
+
+        ifs.read((char*)&name_size, sizeof(int));
+
+        name.resize(name_size);
+
+        for (int i = 0; i < name_size; i++)
+        {
+            ifs.read((char*) &name[i], sizeof(char));
+        }
 
         std::vector<int> float_vectors_sizes;
         std::vector<int> int_vectors_sizes;
@@ -363,22 +393,6 @@ public:
     }
 };
 
-class MyClass : public Serializable
-{
-public:
-    std::string greetings;
-
-    inline virtual p_strings get_strings()
-    {
-        return 
-        {
-            &greetings
-        };
-    }
-};
-
-#define LOG(x) std::cout << x << '\n'
-
 struct Mesh : public Serializable
 {
     std::vector<float> pos;
@@ -417,38 +431,32 @@ struct Mesh : public Serializable
         for (float p : uvs)
             LOG(p);
     }
+
+    Mesh(const std::string name) : Serializable(name) {}
+    Mesh() : Serializable() {}
 };
 
 int main()
 {
-    // Mesh m1;
-    // m1.pos = { 1, 2, 3 };
-    // m1.ind = { 62, 27, 28, 92, 210 };
-    // m1.nor = { 10 };
-    // m1.uvs = { 2.1f, 2.2f, 10.1f };
+    Mesh m1("Quad");
+    m1.pos = { 1, 2, 3 };
+    m1.ind = { 62, 27, 28, 92, 210 };
+    m1.nor = { 10 };
+    m1.uvs = { 2.1f, 2.2f, 10.1f };
 
-    // Mesh m2;
+    // Mesh m2("Cube");
     // m2.pos = { 113, 22, 53, 4, 6 };
     // m2.ind = { 211 };
     // m2.nor = { 123 };
     // m2.uvs = { 15.1f };
     
-    // std::ofstream ofs("meshes");
-    // int m1size = m1.serialize(ofs);
+    std::ofstream ofs("meshes");
+    int m1size = m1.serialize(ofs);
     // int m2size = m2.serialize(ofs);
-    // ofs.close();
+    ofs.close();
 
     Mesh m3;
-    Mesh m4;
-
-    std::ifstream ifs("meshes");
-    ifs.seekg(64);
-    m3.deserialize(ifs);
-    ifs.seekg(64);
-    m4.deserialize(ifs);
-
-    m3.print();
-    m4.print();
+    m3.load("meshes"); 
 
     return 0;
 }
